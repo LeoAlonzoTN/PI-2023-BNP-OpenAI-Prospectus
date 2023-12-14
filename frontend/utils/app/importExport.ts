@@ -11,6 +11,8 @@ import { FolderInterface } from '@/types/folder';
 import { Prompt } from '@/types/prompt';
 
 import { cleanConversationHistory } from './clean';
+import { createPdf } from './pdf';
+
 
 export function isExportFormatV1(obj: any): obj is ExportFormatV1 {
   return Array.isArray(obj);
@@ -101,6 +103,46 @@ export const exportData = () => {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.download = `chatbot_ui_history_${currentDate()}.json`;
+  link.href = url;
+  link.style.display = 'none';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+
+export const exportData_asPDF = async () => {
+  let history = localStorage.getItem('conversationHistory');
+  let folders = localStorage.getItem('folders');
+  let prompts = localStorage.getItem('prompts');
+
+  if (history) {
+    history = JSON.parse(history);
+  }
+
+  if (folders) {
+    folders = JSON.parse(folders);
+  }
+
+  if (prompts) {
+    prompts = JSON.parse(prompts);
+  }
+
+  const data = {
+    version: 4,
+    history: history || [],
+    folders: folders || [],
+    prompts: prompts || [],
+  } as LatestExportFormat;
+
+  var pdf_byte = await createPdf(data);
+  
+  const blob = new Blob([pdf_byte], {
+    type: 'application/pdf',
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.download = `chatbot_ui_history_${currentDate()}.pdf`;
   link.href = url;
   link.style.display = 'none';
   document.body.appendChild(link);
