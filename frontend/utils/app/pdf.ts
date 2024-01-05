@@ -9,77 +9,67 @@ import {
 } from '@/types/export';
 import { FolderInterface } from '@/types/folder';
 import { Prompt } from '@/types/prompt';
-import { PDFDocument, PageSizes, StandardFonts, rgb } from 'pdf-lib'
+import { PDFDocument, PDFFont, PageSizes, StandardFonts, rgb } from 'pdf-lib'
+
 
 export async function createPdf(data:LatestExportFormat) {
-  const pdfDoc = await PDFDocument.create()
-  const timesRomanFont = await pdfDoc.embedFont(StandardFonts.TimesRoman)
-  const page_size = PageSizes.A4
-
   var all_conversations = data.history
-  var all_folder = data.folders
 
-  var page = pdfDoc.addPage(page_size)
-  var { width, height } = page.getSize()
-  
-  const fontSize = 5
-  const base_spacing = 2
-  const marge = 5
-  const bigmarge = 2*marge
+  const pdfDoc = await PDFDocument.create();
+  const page_size = PageSizes.A4
+  const font = await pdfDoc.embedFont(StandardFonts.TimesRoman);
+  const fontSize = 12;
+  let y: number;
 
-  for (var conv of all_conversations ){
-    if (height - base_spacing * fontSize <= 0){
-      page = pdfDoc.addPage(page_size)
-      var { width, height } = page.getSize()
-    }
+  for (const conversation of all_conversations) {
+    var page = pdfDoc.addPage(page_size);
+    const { width, height } = page.getSize();
+    const margin = 50;
+    const usableWidth = width - 2 * margin;
+    y = height - margin;
 
-    page.drawText("Conversation : " + conv.name, {
-        x: marge,
-        y: height - base_spacing * fontSize,
-        size: fontSize,
-        lineHeight:fontSize,
-        font: timesRomanFont,
-        maxWidth: width - 2*marge,
-      })
-    height = height - base_spacing * fontSize
+    page.drawText(conversation.name, { x: 3*margin, y, font, size:1.5*fontSize, color: rgb(0, 0, 0) });
+    y -= font.heightAtSize(1.5*fontSize);
 
-    for (var message of conv.messages){
-        if (height - base_spacing * fontSize <= 0){
-          page = pdfDoc.addPage(page_size)
-          var { width, height } = page.getSize()
-        }
+    for (const message of conversation.messages) {
+      const senderText =  message.role=="assistant"? "[ChatBot]: " : "[User]: ";
+      const fullMessage = `${senderText}${message.content}`;
+      const lines = splitTextIntoLines(fullMessage, font, fontSize, usableWidth);
 
-        page.drawText(message.role + " : ", {
-            x: bigmarge,
-            y: height - base_spacing * fontSize,
-            size: fontSize,
-            lineHeight:fontSize,
-            font: timesRomanFont,
-            maxWidth: width - 2*bigmarge,
-          })
+      if (y - lines.length * font.heightAtSize(fontSize) < margin) {
+        page = pdfDoc.addPage(page_size);
+        y = height - margin;
+      }
 
-        height = height - base_spacing * fontSize
+      lines.forEach((line) => {
+        page.drawText(line, { x: margin, y, font, size:fontSize, color: rgb(0, 0, 0) });
+        y -= font.heightAtSize(fontSize);
+      });
 
-        if (height - Math.ceil(message.content.length / (width - 2*bigmarge)) * fontSize - base_spacing * fontSize <= 0){
-          page = pdfDoc.addPage(page_size)
-          var { width, height } = page.getSize()
-        }
-
-        page.drawText(message.content, {
-            x: bigmarge,
-            y: height - base_spacing * fontSize,
-            size: fontSize,
-            lineHeight:fontSize,
-            font: timesRomanFont,
-            maxWidth: width - 2*bigmarge,
-          })
-        height = height - Math.ceil(message.content.length / (width - 2*bigmarge)) * fontSize - base_spacing * fontSize
+      y -= 10;
     }
   }
-
 
   const pdfBytes = await pdfDoc.save()
   return pdfBytes
 }
 
+function splitTextIntoLines(text: string, font: PDFFont, fontSize: number, maxWidth: number) {
+  const words = text.split(' ');
+  const lines = [];
+  let currentLine = '';
 
+  for (const word of words) {
+    const width = font.widthOfTextAtSize(word, fontSize);
+
+    if (currentLine === '' || font.widthOfTextAtSize(currentLine + ' ' + word, fontSize) <= maxWidth) {
+      currentLine += (currentLine === '' ? '' : ' ') + word;
+    } else {
+      lines.push(currentLine);
+      currentLine = word;
+    }
+  }
+
+  lines.push(currentLine);
+  return lines;
+}
