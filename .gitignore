@@ -160,3 +160,7 @@ cython_debug/
 #.idea/
 openaikey.*
 .env
+
+# NodeJS
+
+frontend/node_modules
