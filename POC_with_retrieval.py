@@ -102,8 +102,11 @@ def ask_question(file_ids, question):
     return "Aucune réponse trouvée."
 
 
-
-file_paths = ["prospectus/prospectus_exemple_3.pdf"]
-file_ids = upload_documents(file_paths)
-response = ask_question(file_ids, "What are the liquidation strategy ?")
-print(response)
+if __name__ == "__main__":
+    file_paths = ["prospectus/prospectus_exemple_3.pdf"]
+    print("Uploading...")
+    file_ids = upload_documents(file_paths)
+    print("Done\nAsking assistant...")
+    response = ask_question(file_ids, "What are the liquidation strategy ?")
+    print()
+    print(response)
