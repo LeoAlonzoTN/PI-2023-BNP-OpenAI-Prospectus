@@ -31,10 +31,11 @@ export const OpenAIStream = async (
   messages: Message[],
 ) => {
   // ==================== PARTIE DU CODE A MODIFIER ====================
-  let url = `${OPENAI_API_HOST}/v1/chat/completions`;
-  if (OPENAI_API_TYPE === 'azure') {
-    url = `${OPENAI_API_HOST}/openai/deployments/${AZURE_DEPLOYMENT_ID}/chat/completions?api-version=${OPENAI_API_VERSION}`;
-  }
+  let url = 'http://127.0.0.1:5000/ask_question'
+  // let url = `${OPENAI_API_HOST}/v1/chat/completions`;
+  // if (OPENAI_API_TYPE === 'azure') {
+  //   url = `${OPENAI_API_HOST}/openai/deployments/${AZURE_DEPLOYMENT_ID}/chat/completions?api-version=${OPENAI_API_VERSION}`;
+  // }
   const res = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',
@@ -50,17 +51,19 @@ export const OpenAIStream = async (
     },
     method: 'POST',
     body: JSON.stringify({
-      ...(OPENAI_API_TYPE === 'openai' && {model: model.id}),
-      messages: [
-        {
-          role: 'system',
-          content: systemPrompt,
-        },
-        ...messages,
-      ],
-      max_tokens: 1000,
-      temperature: temperature,
-      stream: true,
+      question : messages[messages.length - 1].content,
+      file_names : ["prospectus/prospectus_exemple_3.pdf"],
+      // ...(OPENAI_API_TYPE === 'openai' && {model: model.id}),
+      // messages: [
+      //   {
+      //     role: 'system',
+      //     content: systemPrompt,
+      //   },
+      //   ...messages,
+      // ],
+      // max_tokens: 1000,
+      // temperature: temperature,
+      stream: true
     }),
   });
   // ==================== FIN PARTIE DU CODE A MODIFIER ====================
