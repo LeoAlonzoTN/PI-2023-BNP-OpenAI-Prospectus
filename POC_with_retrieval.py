@@ -92,7 +92,7 @@ def ask_question(file_ids, question):
             break
 
     messages = client.beta.threads.messages.list(thread_id=thread.id)
-    
+        
     assistant_messages = [m for m in messages if m.role == 'assistant']
 
     if assistant_messages:
