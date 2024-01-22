@@ -89,35 +89,46 @@ def ask_question(client, assistant_id, file_ids, question):
 
 @app.route('/ask_question', methods=['POST'])
 def handle_question():
-    data = request.json
-    question = data.get('question')
-    file_names = data.get('file_names')
+    # Extrait les données de la requête avant d'entrer dans le générateur
+    request_data = request.get_json()
+    question = request_data.get('question')
+    file_names = request_data.get('file_names')
 
     if not question or not file_names:
-        return Response("Question ou noms de fichiers manquants", status=400)
+        def error_generator():
+            yield json.dumps({"response": "Question ou noms de fichiers manquants"})
+        return Response(error_generator(), status=400, mimetype='application/json')
 
     try:
         client = initialize_openai_client()
         assistant_id = load_assistant_id()
 
         if not assistant_id:
-            return Response("Assistant ID introuvable", status=500)
+            def error_generator():
+                yield json.dumps({"response": "Assistant ID introuvable"})
+            return Response(error_generator(), status=500, mimetype='application/json')
 
-        # Convertir les noms de fichiers en chemins de fichiers
         file_paths = [f"{name}" for name in file_names]
-
-        # Télécharger les documents et poser la question
         file_ids = upload_documents(client, file_paths)
-        response = ask_question(client, assistant_id, file_ids, question)
 
-        # Utilisation de 'yield' pour envoyer les données en continu
-        return Response(response, mimetype='text/plain')
+        def generate():
+            response = ask_question(client, assistant_id, file_ids, question)
+            yield json.dumps({"response": response})
+
+        return Response(generate(), mimetype='application/json')
     except Exception as e:
-        return Response(str(e), status=500)
+        def error_generator():
+            yield json.dumps({"response": str(e)})
+        return Response(error_generator(), status=500, mimetype='application/json')
+
+
 
 @app.route('/hello', methods=["POST"])
 def hello_world():
-    return Response("hello_world", mimetype='text/plain')
+    def generate():
+        yield json.dumps({"response": "hello_world"})
+    return Response(generate(), mimetype='application/json')
+
 
 # Démarrer l'application Flask
 if __name__ == '__main__':
