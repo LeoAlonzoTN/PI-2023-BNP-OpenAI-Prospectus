@@ -101,6 +101,13 @@ def ask_question(file_ids, question):
             return last_message.content[0].text.value
     return "Aucune réponse trouvée."
 
+@app.route('/data', methods=['POST'])
+def get_data():
+    data = request.get_json()
+    text=data.get('data')
+    user_input = text
+    
+
 
 if __name__ == "__main__":
     file_paths = ["prospectus/prospectus_exemple_3.pdf"]

@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify,Response
+from flask import Flask, request, jsonify,render_template
 import openai
 import json
 import time
@@ -74,8 +74,8 @@ def ask_question(client, assistant_id, file_ids, question):
         run_status = client.beta.threads.runs.retrieve(
             thread_id=thread.id,
             run_id=run.id
-        )
-        if run_status.status == 'completed':
+        ).status
+        if run_status == 'completed':
             break
 
     messages = client.beta.threads.messages.list(thread_id=thread.id)
@@ -84,50 +84,93 @@ def ask_question(client, assistant_id, file_ids, question):
     if assistant_messages:
         last_message = assistant_messages[-1]
         if last_message.content and last_message.content[0].text:
-            return last_message.content[0].text.value
+            message_content = last_message.content[0].text
+            annotations = message_content.annotations
+            citations = []
+
+            # Iterate over the annotations and add footnotes
+            for index, annotation in enumerate(annotations):
+                # Replace the text with a footnote
+                message_content.value = message_content.value.replace(annotation.text, f' [{index}]')
+
+                # Gather citations based on annotation attributes
+                if (file_citation := getattr(annotation, 'file_citation', None)):
+                    cited_file = client.files.retrieve(file_citation.file_id)
+                    citations.append(f'[{index}] {file_citation.quote[:50]+"..."} from {cited_file.filename}')
+                elif (file_path := getattr(annotation, 'file_path', None)):
+                    cited_file = client.files.retrieve(file_path.file_id)
+                    citations.append(f'[{index}] Click <here> to download {cited_file.filename}')
+                    # Note: File download functionality not implemented above for brevity
+                
+                message_content.value += '\n Source document:'
+                message_content.value += '\n' + '\n'.join(citations)
+
+            return message_content.value
     return "Aucune réponse trouvée."
 
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+# Route pour demander une question via l'API
 @app.route('/ask_question', methods=['POST'])
 def handle_question():
-    # Extrait les données de la requête avant d'entrer dans le générateur
-    request_data = request.get_json()
-    question = request_data.get('question')
-    file_names = request_data.get('file_names')
+    data = request.json
+    question = data.get('question')
+    file_names = data.get('file_names')
 
     if not question or not file_names:
-        def error_generator():
-            yield json.dumps({"response": "Question ou noms de fichiers manquants"})
-        return Response(error_generator(), status=400, mimetype='application/json')
+        return jsonify({"error": "Question ou noms de fichiers manquants"}), 400
 
     try:
         client = initialize_openai_client()
         assistant_id = load_assistant_id()
 
         if not assistant_id:
-            def error_generator():
-                yield json.dumps({"response": "Assistant ID introuvable"})
-            return Response(error_generator(), status=500, mimetype='application/json')
+            return jsonify({"error": "Assistant ID introuvable"}), 500
 
+        # Convertir les noms de fichiers en chemins de fichiers
         file_paths = [f"{name}" for name in file_names]
+
+        # Télécharger les documents et poser la question
         file_ids = upload_documents(client, file_paths)
+        response = ask_question(client, assistant_id, file_ids, question)
 
-        def generate():
-            response = ask_question(client, assistant_id, file_ids, question)
-            yield json.dumps({"response": response})
-
-        return Response(generate(), mimetype='application/json')
+        return jsonify({"response": response})
     except Exception as e:
-        def error_generator():
-            yield json.dumps({"response": str(e)})
-        return Response(error_generator(), status=500, mimetype='application/json')
+        return jsonify({"error": str(e)}), 500
 
-
-
-@app.route('/hello', methods=["POST"])
+@app.route('/hello',methods=["POST"])
 def hello_world():
-    def generate():
-        yield json.dumps({"response": "hello_world"})
-    return Response(generate(), mimetype='application/json')
+    return jsonify({"response" : True,"message" : "Bonjour monsieur.e ."})
+
+@app.route('/data', methods=['POST'])
+def get_data():
+    data = request.get_json()
+    text=data.get('data')
+    question = text
+    file_names = data.get("files")
+
+    if not question or not file_names:
+        return jsonify({"error": "Question ou noms de fichiers manquants","response": False}), 400
+
+    try:
+        client = initialize_openai_client()
+        assistant_id = load_assistant_id()
+
+        if not assistant_id:
+            return jsonify({"error": "Assistant ID introuvable","response": False}), 500
+
+        # Convertir les noms de fichiers en chemins de fichiers
+        file_paths = [f"{name}" for name in file_names]
+
+        # Télécharger les documents et poser la question
+        file_ids = upload_documents(client, file_paths)
+        response = ask_question(client, assistant_id, file_ids, question)
+
+        return jsonify({"response": True , "message" : response})
+    except Exception as e:
+        return jsonify({"error": str(e),"response": False }), 500
 
 
 # Démarrer l'application Flask
