@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify,Response
 import openai
 import json
 import time
@@ -74,8 +74,8 @@ def ask_question(client, assistant_id, file_ids, question):
         run_status = client.beta.threads.runs.retrieve(
             thread_id=thread.id,
             run_id=run.id
-        ).status
-        if run_status == 'completed':
+        )
+        if run_status.status == 'completed':
             break
 
     messages = client.beta.threads.messages.list(thread_id=thread.id)
@@ -87,7 +87,6 @@ def ask_question(client, assistant_id, file_ids, question):
             return last_message.content[0].text.value
     return "Aucune réponse trouvée."
 
-# Route pour demander une question via l'API
 @app.route('/ask_question', methods=['POST'])
 def handle_question():
     data = request.json
@@ -95,14 +94,14 @@ def handle_question():
     file_names = data.get('file_names')
 
     if not question or not file_names:
-        return jsonify({"error": "Question ou noms de fichiers manquants"}), 400
+        return Response("Question ou noms de fichiers manquants", status=400)
 
     try:
         client = initialize_openai_client()
         assistant_id = load_assistant_id()
 
         if not assistant_id:
-            return jsonify({"error": "Assistant ID introuvable"}), 500
+            return Response("Assistant ID introuvable", status=500)
 
         # Convertir les noms de fichiers en chemins de fichiers
         file_paths = [f"{name}" for name in file_names]
@@ -111,13 +110,14 @@ def handle_question():
         file_ids = upload_documents(client, file_paths)
         response = ask_question(client, assistant_id, file_ids, question)
 
-        return jsonify({"response": response})
+        # Utilisation de 'yield' pour envoyer les données en continu
+        return Response(response, mimetype='text/plain')
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return Response(str(e), status=500)
 
-@app.route('/hello',methods=["POST"])
+@app.route('/hello', methods=["POST"])
 def hello_world():
-    return jsonify({"response" : "hello_world"})
+    return Response("hello_world", mimetype='text/plain')
 
 # Démarrer l'application Flask
 if __name__ == '__main__':
