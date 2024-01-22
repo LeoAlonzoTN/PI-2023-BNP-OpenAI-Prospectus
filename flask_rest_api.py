@@ -70,7 +70,7 @@ def ask_question(client, assistant_id, file_ids, question):
     )
 
     while True:
-        time.sleep(5)
+        time.sleep(1)
         run_status = client.beta.threads.runs.retrieve(
             thread_id=thread.id,
             run_id=run.id
@@ -113,6 +113,10 @@ def handle_question():
         return jsonify({"response": response})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@app.route('/hello',methods=["POST"])
+def hello_world():
+    return jsonify({"response" : "hello_world"})
 
 # Démarrer l'application Flask
 if __name__ == '__main__':
