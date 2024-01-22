@@ -110,7 +110,6 @@ def handle_question():
         # Télécharger les documents et poser la question
         file_ids = upload_documents(client, file_paths)
         response = ask_question(client, assistant_id, file_ids, question)
-
         return jsonify({"response": response})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
