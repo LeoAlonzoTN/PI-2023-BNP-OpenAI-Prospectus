@@ -6,5 +6,13 @@ class ObserverInterface(ABC):
         pass
 
     @abstractmethod
+    def update_metric_input(self,input):
+        pass
+
+    @abstractmethod
+    def update_metric_output(self,output):
+        pass
+
+    @abstractmethod
     def get_metric(self):
         pass
