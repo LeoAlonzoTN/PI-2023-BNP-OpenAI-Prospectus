@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+    
 
 <head>
     <meta charset="UTF-8">
@@ -11,8 +12,86 @@
     <style>
         .container {
             display: flex;
-            justify-content: center;
-            align-items: center;
+            justify-content: justify;
+            align-items: stretch;
+        }
+
+        .navBar {
+            position: fixed;
+            left: 0;
+            height: 100vh;
+            display: flex;
+            align-content : space-between;
+            gap: 20px; 
+            flex-wrap: wrap;
+            width: max(20%, 400px);
+            margin-top: 70px;
+            padding-bottom: 100px;
+            padding-left: 20px;
+            padding-right: 20px;
+            box-shadow: 1px 1px 5px #80808057;
+        }
+
+        .scrollfiles {
+            overflow-y: scroll;
+            height : 50vh;
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid gray;
+        }
+
+        .scrollfiles::-webkit-scrollbar {
+            width: 0 !important
+        }
+
+        .buttons {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 10px;
+            width: 100%;
+            
+        }
+
+        .button {
+            border: 1px solid gray;
+            border-radius: 5px;
+            width: 100%;
+            color: gray;
+            font-size: 20px;
+            border-radius: .5px;
+            padding: 10px 20px;
+            text-align: center;
+            transition: all 0.15s ease;
+        }
+
+        .pdf {
+            background-image: url("{{ url_for('static', filename='images/iconPDFGray.png') }}");
+            background-repeat: no-repeat;
+            background-position: right 0px center;
+            background-size: 36px;
+        }
+
+        .export {
+            background-image: url("{{ url_for('static', filename='images/iconExportGray.png') }}");
+            background-repeat: no-repeat;
+            background-position: right 0px center;
+            background-size: 36px;
+        }
+
+        .import {
+            background-image: url("{{ url_for('static', filename='images/iconImportGray.png') }}");
+            background-repeat: no-repeat;
+            background-position: right 0px center;
+            background-size: 36px;
+        }
+
+        .upload {
+            background-image: url("{{ url_for('static', filename='images/iconUploadGray.png') }}");
+            background-repeat: no-repeat;
+            background-position: right 0px center;
+            background-size: 36px;
         }
 
         .box {
@@ -25,6 +104,7 @@
             position: fixed;
             bottom: 0;
             padding-bottom: 5%;
+            margin-left : max(20%, 400px);
             background-color: white;
             width: min(95%, 800px);
         }
@@ -65,7 +145,8 @@
             max-height: 100%;
             padding-top: 40px;
             padding-bottom: 170px;
-            overflow: auto;
+            margin-left : max(20%, 400px);
+            width : 100vh;
         }
 
         .upper::-webkit-scrollbar {
@@ -84,6 +165,14 @@
             color: gray;
         }
 
+        body::-webkit-scrollbar {
+            display: none;
+        }
+
+        body {
+            overflow: hidden;
+        }
+
         nav {
             position: fixed;
             width: 100%;
@@ -93,9 +182,9 @@
     </style>
 </head>
 
-<body>
+<body >
 
-    <nav class="bg-white border-gray-200 dark:bg-gray-900">
+    <nav class="bg-white border-gray-200 dark:bg-gray-900 overflow-y-hidden">
         <div class="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
             <a href="#" class="flex items-center">
                 <img src="https://seeklogo.com/images/O/open-ai-logo-8B9BFEDC26-seeklogo.com.png" class="h-8 mr-3"
@@ -108,11 +197,23 @@
     </nav>
 
     <div class="container">
+        <div class="navBar bg-gray-900 border-gray-200">
+            <div class="files text-center w-full max-h-screen">
+                <div class="font-semibold text-center text-2xl p-3 text-gray-200 ">Files uploaded :</div>
+                <div class="scrollfiles">
+
+                </div>
+            </div>
+            <div class="buttons">
+                <button class="button pdf bg-gray-800 font-semibold"><span >Export conversation to PDF</span></button>
+                <button class="button export bg-gray-800 font-semibold"><span>Export conversation</span></button>
+                <button class="button import bg-gray-800 font-semibold"><span>Import conversation</span></button>
+                <button class="button upload bg-gray-800 font-semibold"><span>Upload file</span></button>
+            </div> 
+        </div> 
         <div class="box">
             <div class="upper" id="upperid">
                 <span class="downwarning">Type your message in box below.</span>
-                
-
             </div>
 
             <div class="bottom">
@@ -137,7 +238,7 @@
                     </div>
                 </form>
               
-                <span class="downwarning">Remember Your Chat will not be saved, it will be lost upon reloading.</span>
+                <span class="downwarning"><a target="_blank" href="https://icons8.com/icon/2460/import">Import</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a></span>
             </div>
         </div>
     </div>
@@ -177,7 +278,7 @@
             document.getElementById('userinput').value = ""
             document.getElementById('userinput').placeholder = "Wait . . ."
 
-            const response = await fetch("http://127.0.0.1:5000/data", {
+            const response = await fetch("http://127.0.0.1:5000/hello", {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
