@@ -1,8 +1,11 @@
 from flask import Flask, request, jsonify, render_template, make_response, redirect
 from main import MainApplication
+from metric_management import creditManager
+from file_management import FileManager
 
 app = Flask(__name__)
 main_app = MainApplication()
+main_app.add_observer(creditManager())
 
 @app.route('/data', methods=['POST'])
 def handle_question():
@@ -14,26 +17,30 @@ def handle_question():
     if not text or not file_names:
         return jsonify({"error": "Question ou noms de fichiers manquants", "response": False}), 400
 
-    try:
-        client = main_app.openai_client.get_client()
-        assistant_id = main_app.assistant_manager.load_assistant_id()
 
-        if not assistant_id:
-            return jsonify({"error": "Assistant ID introuvable", "response": False}), 500
+    client = main_app.openai_client.get_client()
+    assistant_id = main_app.assistant_manager.load_assistant_id()
 
-        file_paths = [f"{name}" for name in file_names]
-        file_ids = main_app.file_manager.upload_documents(client, file_paths)
-        response = main_app.assistant_manager.ask_question(client, assistant_id, file_ids, text)
-        metrics = main_app.get_observers_metrics()
+    if not assistant_id:
+        return jsonify({"error": "Assistant ID introuvable", "response": False}), 500
 
-        # Construction de la réponse avec gestion des cookies
-        resp = make_response(jsonify({"response": True, "message": response, "metrics": metrics}))
-        current_discussion = request.cookies.get('discussion', '')
-        new_discussion = current_discussion + f"Question: {text}\nRéponse: {response}\n"
-        resp.set_cookie('discussion', new_discussion)
-        return resp
-    except Exception as e:
-        return jsonify({"error": str(e), "response": False}), 500
+    file_paths = [f"{name}" for name in file_names]
+    file_ids = main_app.file_manager.upload_documents(client, file_paths)
+    response,input_token,response_without_annotation = main_app.assistant_manager.ask_question(client, assistant_id, file_ids, text)
+    main_app.update_metric(input_token,response_without_annotation)
+    metrics = main_app.get_metrics()
+
+    # Construction de la réponse avec gestion des cookies
+
+    resp = make_response(jsonify({"response": True, "message": response}))
+    current_discussion = request.cookies.get('discussion', '')
+    new_discussion = current_discussion + f"Question: {text}\nRéponse: {response}\n"
+    resp.set_cookie('discussion', new_discussion)
+
+    print(metrics)
+    
+    return resp
+    
 
 @app.route('/')
 def index():
@@ -45,6 +52,27 @@ def reset_discussion():
     response = make_response(redirect('/'))
     response.set_cookie('discussion', '', expires=0)
     return response
+
+@app.route('/delete_document', methods=['POST'])
+def delete_document():
+    data = request.get_json()
+    document_name = data.get('document_name')
+
+    if not document_name:
+        return jsonify({"error": "Nom du document manquant", "response": False}), 400
+
+    file_id = FileManager.get_uploaded_files().get(document_name)
+
+    if not file_id:
+        return jsonify({"error": "ID de fichier introuvable pour le document donné", "response": False}), 404
+
+    delete_response = FileManager.delete_file(file_id)
+
+    if delete_response.get('error'):
+        return jsonify({"error": delete_response['error'], "response": False}), 500
+
+    return jsonify({"message": "Document supprimé avec succès", "response": True}), 200
+
 
 if __name__ == '__main__':
     app.run(debug=True)

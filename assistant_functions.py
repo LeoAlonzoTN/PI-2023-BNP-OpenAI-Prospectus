@@ -34,8 +34,8 @@ class AssistantManager:
             run_status = client.beta.threads.runs.retrieve(
                 thread_id=thread.id,
                 run_id=run.id
-            ).status
-            if run_status == 'completed':
+            )
+            if run_status.status == 'completed':
                 break
 
         messages = client.beta.threads.messages.list(thread_id=thread.id)
@@ -45,6 +45,7 @@ class AssistantManager:
             last_message = assistant_messages[-1]
             if last_message.content and last_message.content[0].text:
                 message_content = last_message.content[0].text
+                response = message_content
                 annotations = message_content.annotations
                 citations = []
 
@@ -65,5 +66,5 @@ class AssistantManager:
                 message_content.value += '\n Source document:'
                 message_content.value += '\n' + '\n'.join(citations)
 
-                return message_content.value
+                return message_content.value,run_status.usage.total_tokens,response
         return "Aucune réponse trouvée."

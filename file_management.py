@@ -1,4 +1,6 @@
 import json
+import os
+import requests
 
 class FileManager:
 
@@ -14,6 +16,41 @@ class FileManager:
     def save_uploaded_file(file_name, file_id):
         uploaded_files = FileManager.get_uploaded_files()
         uploaded_files[file_name] = file_id
+        with open('uploaded_files.json', 'w') as file:
+            json.dump(uploaded_files, file)
+
+    @staticmethod
+    def delete_file(file_id):
+        api_key = FileManager.read_api_key()
+        if api_key:
+            url = f"https://api.openai.com/v1/files/{file_id}"
+            headers = {
+                'Authorization': f'Bearer {api_key}'
+            }
+            response = requests.delete(url, headers=headers)
+            if response.status_code == 200:
+                FileManager.remove_file_from_json(file_id)
+                return response.json()
+            else:
+                return {'error': 'Failed to delete file'}
+        else:
+            return {'error': 'API key not found'}
+
+    @staticmethod
+    def read_api_key():
+        try:
+            with open('openaikey.txt', 'r') as file:
+                return file.read().strip()
+        except FileNotFoundError:
+            return None
+
+    @staticmethod
+    def remove_file_from_json(file_id):
+        uploaded_files = FileManager.get_uploaded_files()
+        for file_name, id in uploaded_files.items():
+            if id == file_id:
+                del uploaded_files[file_name]
+                break
         with open('uploaded_files.json', 'w') as file:
             json.dump(uploaded_files, file)
 

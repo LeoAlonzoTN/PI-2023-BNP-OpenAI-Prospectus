@@ -156,60 +156,99 @@
             formsubmitted();
         });
 
-            // sending request to python server
-            const formsubmitted = async () => {
-                let userinput = document.getElementById('userinput').value;
-                let sendbtn = document.getElementById('sendbtn');
-                let userinputarea = document.getElementById('userinput');
-                let upperdiv = document.getElementById('upperid');
+        // sending request to python server
+        const formsubmitted = async () => {
+            let userinput = document.getElementById('userinput').value
+            let sendbtn = document.getElementById('sendbtn')
+            let userinputarea = document.getElementById('userinput')
+            let upperdiv = document.getElementById('upperid')
 
-                // Affichage du message de l'utilisateur
+            upperdiv.innerHTML += `<div class="message">
+                <div class="usermessagediv">
+                    <div class="usermessage">
+                        ${userinput}
+                    </div>
+                </div>
+            </div>`;
+            sendbtn.disabled = true;
+            userinputarea.disabled = true;
+            scrollToBottom();
+            document.getElementById('userinput').value = "";
+            document.getElementById('userinput').placeholder = "Wait . . .";
+
+            const response = await fetch("http://127.0.0.1:5000/data", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ data: userinput, files: ["prospectus/prospectus_exemple_3.pdf"] })
+            });
+            let json = await response.json();
+
+            document.getElementById('userinput').placeholder = "Your message...";
+
+            if (json.response) {
+                let message = json.message.toString().replace(/\n/g, '<br>'); // Remplacement des sauts de ligne par des <br>
+
                 upperdiv.innerHTML += `<div class="message">
-                    <div class="usermessagediv">
-                        <div class="usermessage">${userinput}</div>
+                    <div class="appmessagediv">
+                        <div class="appmessage" id="temp"></div>
                     </div>
                 </div>`;
-                sendbtn.disabled = true;
-                userinputarea.disabled = true;
-                scrollToBottom();
-                document.getElementById('userinput').value = "";
-                document.getElementById('userinput').placeholder = "Wait . . .";
+                let temp = document.getElementById('temp');
+                let index = 0;
+                let messageWithHTML = ''; // String qui contiendra le message avec HTML
 
-                // Envoi de la requête au serveur
-                const response = await fetch("http://127.0.0.1:5000/data", {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ data: userinput, files: ["prospectus/prospectus_exemple_3.pdf"]})
-                });
-
-                let json = await response.json();
-                document.getElementById('userinput').placeholder = "Your message...";
-
-                // Traitement et affichage de la réponse du serveur
-                if (json.response) {
-                    let message = json.message.toString().replace(/\n/g, "<br>"); // Remplacement des \n par <br>
-
-                    upperdiv.innerHTML += `<div class="message">
-                        <div class="appmessagediv">
-                            <div class="appmessage">${message}</div>
-                        </div>
-                    </div>`;
-                } else {
-                    let errorMessage = json.message;
-
-                    upperdiv.innerHTML += `<div class="message">
-                        <div class="appmessagediv">
-                            <div class="appmessage" style="border: 1px solid red;">${errorMessage}</div>
-                        </div>
-                    </div>`;
+                function displayNextLetter() {
+                    if (index < message.length) {
+                        messageWithHTML += message[index] === '<' ? '<br>' : message[index];
+                        temp.innerHTML = messageWithHTML;
+                        index += message[index] === '<' ? 4 : 1; // Avancer de 4 pour '<br>'
+                        scrollToBottom();
+                        setTimeout(displayNextLetter, 5);
+                    } else {
+                        temp.removeAttribute('id');
+                        sendbtn.disabled = false;
+                        userinputarea.disabled = false;
+                    }
                 }
-
+                displayNextLetter();
+            } else {
+                let errorMessage = json.message;
+                upperdiv.innerHTML += `<div class="message">
+                    <div class="appmessagediv">
+                        <div class="appmessage" style="border: 1px solid red;">
+                            ${errorMessage}
+                        </div>
+                    </div>
+                </div>`;
                 sendbtn.disabled = false;
                 userinputarea.disabled = false;
-                scrollToBottom();
-            };
+            }
+            scrollToBottom();
+        };
+
+
+        function displayNextLetter() {
+            scrollToBottom();
+            if (index < message.length) {
+                if (message[index] === '\n') {
+                    temp.innerHTML += '<br>';
+                } else {
+                    temp.innerHTML += message[index];
+                }
+                index++;
+                setTimeout(displayNextLetter, 5);
+            } else {
+                temp.removeAttribute('id');
+                sendbtn.disabled = false;
+                userinputarea.disabled = false;
+            }
+        }
+
+
+
+
 
 
         function readCookie(name) {
@@ -224,10 +263,20 @@
         }
 
         function formatMessage(message) {
-            // Convertir les séquences d'échappement en caractères réels
-            let formattedMessage = message.replace(/\\012/g, "<br>").replace(/\\303\\251/g, "é").replace(/\\054/g, ",");
+            // Convert escape sequences to actual characters
+            let formattedMessage = message.replace(/\\012/g, "<br>")
+                .replace(/\\303\\251/g, "é")
+                .replace(/\\054/g, ",")
+                .replace(/\\303\\250/g,'è')
+                .replace(/\\303\\252/g,"ê")
+                .replace(/\\303\\240/g,'à');
 
-            // Diviser le message en questions et réponses
+            // Identify and style the source section    
+            formattedMessage = formattedMessage.replace(/(Source document:.+)/g, function(match) {
+                return `<span style="font-style: italic; font-size: 14px;">${match}</span>`;
+            });
+
+            // Split the message into questions and answers
             let parts = formattedMessage.split(/Question: |Réponse: /);
             let htmlContent = "";
 
@@ -259,6 +308,7 @@
         }
 
         loadDiscussion();
+        scrollToBottom();
 
 
     </script>
