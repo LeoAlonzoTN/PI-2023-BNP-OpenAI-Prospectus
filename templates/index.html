@@ -137,7 +137,7 @@
                     </div>
                 </form>
               
-                <span class="downwarning">Remember Your Chat will not be saved, it will be lost upon reloading.</span>
+                <span class="downwarning">Your chat is temporarily saved. It will be lost upon clearing cookies or resetting the chat.</span>
             </div>
         </div>
     </div>
@@ -156,89 +156,111 @@
             formsubmitted();
         });
 
-        // sending request to python server
-        const formsubmitted = async () => {
-            let userinput = document.getElementById('userinput').value
-            let sendbtn = document.getElementById('sendbtn')
-            let userinputarea = document.getElementById('userinput')
-            let upperdiv = document.getElementById('upperid')
-           
+            // sending request to python server
+            const formsubmitted = async () => {
+                let userinput = document.getElementById('userinput').value;
+                let sendbtn = document.getElementById('sendbtn');
+                let userinputarea = document.getElementById('userinput');
+                let upperdiv = document.getElementById('upperid');
 
-            upperdiv.innerHTML = upperdiv.innerHTML + `<div class="message">
-                <div class="usermessagediv">
-                        <div class="usermessage">
-                            ${userinput}
+                // Affichage du message de l'utilisateur
+                upperdiv.innerHTML += `<div class="message">
+                    <div class="usermessagediv">
+                        <div class="usermessage">${userinput}</div>
+                    </div>
+                </div>`;
+                sendbtn.disabled = true;
+                userinputarea.disabled = true;
+                scrollToBottom();
+                document.getElementById('userinput').value = "";
+                document.getElementById('userinput').placeholder = "Wait . . .";
+
+                // Envoi de la requête au serveur
+                const response = await fetch("http://127.0.0.1:5000/data", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ data: userinput, files: ["prospectus/prospectus_exemple_3.pdf"]})
+                });
+
+                let json = await response.json();
+                document.getElementById('userinput').placeholder = "Your message...";
+
+                // Traitement et affichage de la réponse du serveur
+                if (json.response) {
+                    let message = json.message.toString().replace(/\n/g, "<br>"); // Remplacement des \n par <br>
+
+                    upperdiv.innerHTML += `<div class="message">
+                        <div class="appmessagediv">
+                            <div class="appmessage">${message}</div>
                         </div>
-                </div>
-            </div>`
-            sendbtn.disabled = true
-            userinputarea.disabled = true
-            scrollToBottom()
-            document.getElementById('userinput').value = ""
-            document.getElementById('userinput').placeholder = "Wait . . ."
+                    </div>`;
+                } else {
+                    let errorMessage = json.message;
 
-            const response = await fetch("http://127.0.0.1:5000/data", {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ data: userinput , files : ["prospectus/prospectus_exemple_3.pdf"]})
-
-
-            });
-            let json = await response.json();
-
-            document.getElementById('userinput').placeholder = "Your message..."
-   
-
-            if (json.response) {
-                let message = json.message
-                message = message.toString()
-      
-                upperdiv.innerHTML = upperdiv.innerHTML + `<div class="message">
-                <div class="appmessagediv">
-                    <div class="appmessage" id="temp">
-                        
-                    </div>
-                </div>
-            </div>`
-                let temp = document.getElementById('temp')
-                let index = 0
-                function displayNextLetter() {
-                    scrollToBottom()
-                    if (index < message.length) {
-                        temp.innerHTML = temp.innerHTML + message[index];
-                        index++;
-                        setTimeout(displayNextLetter, 5);
-                    } else {
-                        temp.removeAttribute('id')
-                        sendbtn.disabled = false
-                        userinputarea.disabled = false
-                    }
+                    upperdiv.innerHTML += `<div class="message">
+                        <div class="appmessagediv">
+                            <div class="appmessage" style="border: 1px solid red;">${errorMessage}</div>
+                        </div>
+                    </div>`;
                 }
-                displayNextLetter()
-                scrollToBottom()
 
+                sendbtn.disabled = false;
+                userinputarea.disabled = false;
+                scrollToBottom();
+            };
+
+
+        function readCookie(name) {
+            var nameEQ = name + "=";
+            var ca = document.cookie.split(';');
+            for (var i = 0; i < ca.length; i++) {
+                var c = ca[i];
+                while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+                if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
             }
-            else {
-                let message = json.message
-                upperdiv.innerHTML = upperdiv.innerHTML +
-                    `<div class="message">
-                <div class="appmessagediv">
-                    <div class="appmessage"  style="border: 1px solid red;">
-                      ${message}
+            return null;
+        }
 
-                    </div>
-                </div>
-            </div>`
-                sendbtn.disabled = false
-                userinputarea.disabled = false
+        function formatMessage(message) {
+            // Convertir les séquences d'échappement en caractères réels
+            let formattedMessage = message.replace(/\\012/g, "<br>").replace(/\\303\\251/g, "é").replace(/\\054/g, ",");
+
+            // Diviser le message en questions et réponses
+            let parts = formattedMessage.split(/Question: |Réponse: /);
+            let htmlContent = "";
+
+            for (let i = 1; i < parts.length; i += 2) {
+                htmlContent += `<div class="message">
+                                    <div class="usermessagediv">
+                                        <div class="usermessage">
+                                            ${parts[i]}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="message">
+                                    <div class="appmessagediv">
+                                        <div class="appmessage">
+                                            ${parts[i + 1]}
+                                        </div>
+                                    </div>
+                                </div>`;
             }
 
-            scrollToBottom()
+            return htmlContent;
+        }
+
+        function loadDiscussion() {
+            var discussion = readCookie('discussion');
+            if (discussion) {
+                document.getElementById('upperid').innerHTML = formatMessage(discussion);
+            }
+        }
+
+        loadDiscussion();
 
 
-        } 
     </script>
 </body>
 
