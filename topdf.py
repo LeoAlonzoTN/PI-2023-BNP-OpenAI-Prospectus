@@ -4,8 +4,8 @@ from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Paragraph
 
-Chatbotname = 'ChatBot'
-username = 'User'
+Botname = 'ChatBot'
+Username = 'User'
 
 def create_pdf(messages, output_file):
     doc = SimpleDocTemplate(output_file, pagesize=letter)
@@ -37,10 +37,10 @@ def create_pdf(messages, output_file):
 if __name__ == '__main__':
     # Exemple d'utilisation
     messages = [
-        (Chatbotname, "Hello, how are you?"),
-        (username, "I'm fine, thank you!"),
-        (Chatbotname, "What are your plans for the weekend? "), 
-        (username, "I'm planning to relax and read a book."),
+        (Botname, "Hello, how are you?"),
+        (Username, "I'm fine, thank you!"),
+        (Botname, "What are your plans for the weekend? "), 
+        (Username, "I'm planning to relax and read a book."),
     ]
 
     output_file = "output.pdf"
