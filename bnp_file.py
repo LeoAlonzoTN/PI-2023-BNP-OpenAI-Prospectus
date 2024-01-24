@@ -15,8 +15,7 @@ def create_bnp(messages,output_file):
         json.dump(bnp, fichier_json)
 
 def load_bnp(output_file):
-    with open(output_file, 'r') as fichier_json:
-        data = json.load(fichier_json)
+    data = json.load(output_file)
     messages = []
     for i in data:
         role = data[str(i)]["role"]
@@ -37,5 +36,5 @@ if __name__ == '__main__':
     output_file = "output.bnp"
     create_bnp(messages, output_file)
     print(f"Le fichier BNP a été créé avec succès: {output_file}")
-    print(messages==load_bnp(output_file))
+    #print(messages==load_bnp(output_file))
     print(f"Le fichier BNP a été load avec succès: {output_file}")

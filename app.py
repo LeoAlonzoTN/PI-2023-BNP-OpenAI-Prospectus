@@ -2,10 +2,11 @@ from flask import Flask, request, jsonify, render_template, make_response, redir
 from main import MainApplication
 from metric_management import creditManager
 from file_management import FileManager
-from topdf import create_pdf, convert_discussion_to_tuples
+from topdf import create_pdf, convert_discussion_to_tuples,convert_tuples_to_discussion
 import os
 from time import sleep
 import base64
+from bnp_file import load_bnp,create_bnp
 
 app = Flask(__name__)
 main_app = MainApplication()
@@ -144,6 +145,44 @@ def save2pdf():
 
     return response
 
+@app.route('/load_bnpfile', methods=['POST'])
+def load_bnpfile():
+    if 'file' not in request.files:
+        return jsonify({"error": "Aucun fichier n'a été téléchargé", "response": False}), 400
+    
+    file = request.files['file']
+
+    if file.filename == '':
+        return jsonify({"error": "Aucun fichier sélectionné.", "response": False}), 400
+    
+    messages = load_bnp(file.stream)
+
+    new_discussion = convert_tuples_to_discussion(messages)
+
+    response = make_response(redirect('/'))
+    response.set_cookie('discussion', new_discussion)
+    return response
+
+@app.route('/save_bnpfile')
+def save_bnpfile():
+    discussion = request.cookies.get('discussion', '')
+    messages = convert_discussion_to_tuples(discussion)
+    bnp_filename = "temp.bnp"
+    create_bnp(messages,bnp_filename)
+
+    # Envoi du fichier BNP
+    response = send_file(bnp_filename, as_attachment=True,download_name="log.bnp")
+
+    # Suppression du fichier après envoi
+    @after_this_request
+    def remove_file(response):
+        try:
+            os.remove(bnp_filename)
+        except Exception as error:
+            app.logger.error("Erreur lors de la suppression du fichier", error)
+        return response
+
+    return response
 
 if __name__ == '__main__':
     app.run(debug=True)
