@@ -28,6 +28,16 @@ def convert_discussion_to_tuples(discussion):
 
     return discussion_tuples
 
+def convert_tuples_to_discussion(tuples):
+    discussion = ""
+    for role,content in tuples:
+        if role=="User":
+            discussion += f"Question: {content}\n"
+        else:
+            discussion += f"Réponse: {content}\n"
+
+    return discussion
+
 
 def create_pdf(messages, output_file):
     doc = SimpleDocTemplate(output_file, pagesize=letter)

@@ -217,9 +217,12 @@
                 </div>
             </div>
             <div class="buttons">
-                <button class="button pdf bg-gray-800 font-semibold"><span >Export conversation to PDF</span></button>
-                <button class="button export bg-gray-800 font-semibold"><span>Export conversation</span></button>
-                <button class="button import bg-gray-800 font-semibold"><span>Import conversation</span></button>
+                <button id="pdfSave" class="button pdf bg-gray-800 font-semibold"><span >Export conversation to PDF</span></button>
+                <button id="bnpSave" class="button export bg-gray-800 font-semibold"><span>Export conversation</span></button>
+                <form action="/load_bnpfile" method="post" enctype="multipart/form-data" id="loadBnp">
+                    <input type="file" name="file" id="bnpInput" accept=".bnp" style="display: none;" onchange="loadBnp()">
+                    <label for="bnpInput" class="button import bg-gray-800 font-semibold">Import conversation</label>
+                </form>
                 <input type="file" id="fileSelector" class="button upload bg-gray-800 font-semibold"><span>Upload file</span></button>
             </div> 
         </div> 
@@ -457,7 +460,17 @@
             }
         }
 
+        document.getElementById('pdfSave').addEventListener('click', function() {
+            window.location.href = '/save_pdf';
+        });
 
+        document.getElementById('bnpSave').addEventListener('click', function() {
+            window.location.href = '/save_bnpfile';
+        });
+
+        function loadBnp() {
+            document.getElementById('loadBnp').submit();
+        }
 
 
 
