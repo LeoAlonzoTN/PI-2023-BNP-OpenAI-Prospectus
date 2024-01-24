@@ -55,15 +55,27 @@
         }
 
         .button {
-            border: 1px solid gray;
+            
             border-radius: 5px;
             width: 100%;
             color: gray;
             font-size: 20px;
-            border-radius: .5px;
+            border-radius: 12px;
             padding: 10px 20px;
             text-align: center;
             transition: all 0.15s ease;
+        }
+
+        .button:hover {
+            background-color: gray;
+            color: white;
+        }
+
+        .check {
+            background-image: url("{{ url_for('static', filename='images/iconCheckGray.png') }}");
+            background-repeat: no-repeat;
+            background-position: right 0px center;
+            background-size: 36px;
         }
 
         .pdf {
@@ -208,7 +220,7 @@
                 <button class="button pdf bg-gray-800 font-semibold"><span >Export conversation to PDF</span></button>
                 <button class="button export bg-gray-800 font-semibold"><span>Export conversation</span></button>
                 <button class="button import bg-gray-800 font-semibold"><span>Import conversation</span></button>
-                <button class="button upload bg-gray-800 font-semibold"><span>Upload file</span></button>
+                <input type="file" id="fileSelector" class="button upload bg-gray-800 font-semibold"><span>Upload file</span></button>
             </div> 
         </div> 
         <div class="box">
@@ -235,6 +247,14 @@
                             </svg>
                             <span class="sr-only">Send message</span>
                         </button>
+                        <a class="inline-flex justify-center p-2 text-red-600 rounded-full cursor-pointer hover:bg-red-800 hover:text-white" href="/reset_discussion"> 
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="3 6 5 6 21 6"/>
+                                <path d="M6 6V21a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V6"/>
+                                <path d="M10 3L10 6"/>
+                                <path d="M14 3L14 6"/>
+                              </svg>
+                        </a>
                     </div>
                 </form>
               
@@ -245,6 +265,95 @@
 
 
     <script>
+        
+        const jsonEndpoint = 'http://127.0.0.1:5000/uploaded_files';  // Relative path to the Flask route
+        var scrollfiles = document.getElementsByClassName('scrollfiles')[0];
+    // Make a Fetch API GET request to retrieve the JSON file
+        fetch(jsonEndpoint)
+        .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+        })
+        .then(jsonData => {
+        // Process the retrieved JSON data
+        console.log('Retrieved JSON data:', jsonData);
+
+        // Iterate through each key-value pair in the JSON data
+        Object.entries(jsonData).forEach(([key, value]) => {
+            // Perform actions with each key-value pair
+            scrollfiles.innerHTML += `<div class="file bg-gray-200 p-2 rounded-lg text-gray-800 font-semibold">${key}</div>`;
+        });
+        })
+        .catch(error => {
+        console.error('Error:', error);
+        });
+        
+        var fileSelector = document.getElementById('fileSelector');
+        fileSelector.addEventListener('change', handleFile ) ;
+
+        function handleFile(e) {
+            const file = event.target.files[0];
+
+    if (file) {
+        const reader = new FileReader();
+
+        reader.onload = function (e) {
+        const arrayBuffer = e.target.result;
+        const uint8Array = new Uint8Array(arrayBuffer);
+        const base64String = btoa(String.fromCharCode.apply(null, uint8Array));
+
+        const pdfData = {
+            document_name: file.name,
+            document_content: base64String,
+        };
+
+        // Create a FormData object and append the JSON data
+        const jsonBlob = new Blob([JSON.stringify(pdfData)], { type: 'application/json' });
+
+        // Make a Fetch API POST request
+        fetch('http://127.0.0.1:5000/download_pdf', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: jsonBlob,
+        })
+            .then(response => 
+                if(response.ok) {
+                    response.json()
+                }
+                else {
+                    throw new Error('Network response was not ok');
+                }
+            )
+            .then(data => {
+                fetch("http://127.0.0.1:5000/upload_document", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ pdf_name : file.name })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    var scrollfiles = document.getElementsByClassName('scrollfiles')[0];
+                    scrollfiles.innerHTML += `<div class="file bg-gray-200 p-2 rounded-lg text-gray-800 font-semibold">${data.document_name}</div>`;
+                })
+                
+            })
+            .catch(error => {
+            console.error('Error:', error);
+            });
+        };
+
+    reader.readAsArrayBuffer(file);
+  }
+        }
+
         // for scrolling messages
         function scrollToBottom() {
             var div = document.getElementById("upperid");
