@@ -55,7 +55,6 @@
         }
 
         .button {
-            
             border-radius: 5px;
             width: 100%;
             color: gray;
@@ -176,6 +175,17 @@
             font-size: 90%;
             color: gray;
         }
+        .file {
+            flex-grow: 4;
+            max-width: 80%;
+        }
+
+        .fileAction {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: nowrap;
+        }
 
         body::-webkit-scrollbar {
             display: none;
@@ -287,13 +297,30 @@
         // Iterate through each key-value pair in the JSON data
         Object.entries(jsonData).forEach(([key, value]) => {
             // Perform actions with each key-value pair
-            scrollfiles.innerHTML += `<div class="file bg-gray-200 p-2 rounded-lg text-gray-800 font-semibold">${key}</div>`;
+            scrollfiles.innerHTML += `<div class="fileAction"><div class="file bg-gray-200 p-2 rounded-lg text-gray-800 font-semibold">${key}</div><button class="inline-flex justify-right-0 p-2 text-red-600 rounded-full cursor-pointer hover:bg-red-800 hover:text-white" onclick="handleFileDelete(${key})">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M6 6V21a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V6"/>
+                <path d="M10 3L10 6"/>
+                <path d="M14 3L14 6"/>
+              </svg>
+            </button></div>`;
         });
         })
         .catch(error => {
         console.error('Error:', error);
         });
         
+        function handleFileDelete(name) {
+            fetch("http://127.0.0.1:5000/delete_document", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ document_name: name })
+            });
+        }
+
         var fileSelector = document.getElementById('fileSelector');
         fileSelector.addEventListener('change', handleFile ) ;
 
