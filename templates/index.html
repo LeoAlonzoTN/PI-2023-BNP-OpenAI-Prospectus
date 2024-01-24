@@ -281,46 +281,68 @@
 
     <script>
         
-        const jsonEndpoint = 'http://127.0.0.1:5000/uploaded_files';  // Relative path to the Flask route
+        const jsonEndpoint = 'http://127.0.0.1:5000/uploaded_files';
         var scrollfiles = document.getElementsByClassName('scrollfiles')[0];
-    // Make a Fetch API GET request to retrieve the JSON file
-        fetch(jsonEndpoint)
-        .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        return response.json();
-        })
-        .then(jsonData => {
-        // Process the retrieved JSON data
-        console.log('Retrieved JSON data:', jsonData);
 
-        // Iterate through each key-value pair in the JSON data
-        Object.entries(jsonData).forEach(([key, value]) => {
-            // Perform actions with each key-value pair
-            scrollfiles.innerHTML += `<div class="fileAction"><div class="file bg-gray-200 p-2 rounded-lg text-gray-800 font-semibold">${key}</div><button class="inline-flex justify-right-0 p-2 text-red-600 rounded-full cursor-pointer hover:bg-red-800 hover:text-white" onclick="handleFileDelete(${key})">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="3 6 5 6 21 6"/>
-                <path d="M6 6V21a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V6"/>
-                <path d="M10 3L10 6"/>
-                <path d="M14 3L14 6"/>
-              </svg>
-            </button></div>`;
-        });
-        })
-        .catch(error => {
-        console.error('Error:', error);
-        });
-        
-        function handleFileDelete(name) {
-            fetch("http://127.0.0.1:5000/delete_document", {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ document_name: name })
+        // Make a Fetch API GET request to retrieve the JSON file
+        fetch(jsonEndpoint)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(jsonData => {
+                console.log('Retrieved JSON data:', jsonData);
+
+                // Iterate through each key-value pair in the JSON data
+                Object.entries(jsonData).forEach(([key, value]) => {
+                    const fileDiv = document.createElement('div');
+                    fileDiv.className = 'fileAction';
+                    fileDiv.innerHTML = `<div class="file bg-gray-200 p-2 rounded-lg text-gray-800 font-semibold">${key}</div>`;
+
+                    const button = document.createElement('button');
+                    button.className = 'inline-flex justify-right-0 p-2 text-red-600 rounded-full cursor-pointer hover:bg-red-800 hover:text-white';
+                    button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M6 6V21a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V6"/><path d="M10 3L10 6"/><path d="M14 3L14 6"/></svg>`;
+
+                    // Attach event listener to the button
+                    button.addEventListener('click', function() {
+                        handleFileDelete(key);
+                    });
+
+                    fileDiv.appendChild(button);
+                    scrollfiles.appendChild(fileDiv);
+                });
+            })
+            .catch(error => {
+                console.error('Error:', error);
             });
-        }
+
+            function handleFileDelete(name) {
+                fetch("http://127.0.0.1:5000/delete_document", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ document_name: name })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Delete response:', data);
+                    // Recharger la page après la suppression réussie
+                    location.reload();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            }
+
+
 
         var fileSelector = document.getElementById('fileSelector');
         fileSelector.addEventListener('change', handleFile ) ;
@@ -342,7 +364,6 @@
                     return response.json();
                 })
                 .then(data => {
-                    // Envoi du nom du fichier téléchargé vers Flask pour l'upload vers OpenAI
                     fetch("http://127.0.0.1:5000/upload_document", {
                         method: 'POST',
                         headers: {
@@ -353,7 +374,21 @@
                     .then(response => response.json())
                     .then(data => {
                         var scrollfiles = document.getElementsByClassName('scrollfiles')[0];
-                        scrollfiles.innerHTML += `<div class="file bg-gray-200 p-2 rounded-lg text-gray-800 font-semibold">${file.name}</div>`;
+                        const fileDiv = document.createElement('div');
+                        fileDiv.className = 'fileAction';
+                        fileDiv.innerHTML = `<div class="file bg-gray-200 p-2 rounded-lg text-gray-800 font-semibold">${file.name}</div>`;
+
+                        const button = document.createElement('button');
+                        button.className = 'inline-flex justify-right-0 p-2 text-red-600 rounded-full cursor-pointer hover:bg-red-800 hover:text-white';
+                        button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M6 6V21a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V6"/><path d="M10 3L10 6"/><path d="M14 3L14 6"/></svg>`;
+
+                        // Attach event listener to the button
+                        button.addEventListener('click', function() {
+                            handleFileDelete(file.name);
+                        });
+
+                        fileDiv.appendChild(button);
+                        scrollfiles.appendChild(fileDiv);
                     });
                 })
                 .catch(error => {

@@ -61,6 +61,7 @@ def reset_discussion():
 
 @app.route('/delete_document', methods=['POST'])
 def delete_document():
+    print("deleting...")
     data = request.get_json()
     document_name = data.get('document_name')
 
