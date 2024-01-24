@@ -320,13 +320,14 @@
             },
             body: jsonBlob,
         })
-            .then(response => 
+            .then(response => {
                 if(response.ok) {
                     response.json()
                 }
                 else {
                     throw new Error('Network response was not ok');
                 }
+            }
             )
             .then(data => {
                 fetch("http://127.0.0.1:5000/upload_document", {

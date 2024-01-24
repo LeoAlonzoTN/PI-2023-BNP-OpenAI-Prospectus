@@ -119,7 +119,7 @@ def upload_to_openai():
         return jsonify({"error": str(e), "response": False}), 500
 
 
-@app.route("/uploaded_file")
+@app.route("/uploaded_files")
 def uploaded_file():
     return send_from_directory(app.root_path,"uploaded_files.json")
 
