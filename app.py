@@ -5,12 +5,13 @@ from file_management import FileManager
 from topdf import create_pdf, convert_discussion_to_tuples,convert_tuples_to_discussion
 import os
 from time import sleep
-import base64
 from bnp_file import load_bnp,create_bnp
+from time_observer import TimeObserver
 
 app = Flask(__name__)
 main_app = MainApplication()
 main_app.add_observer(creditManager())
+main_app.add_observer(TimeObserver())
 
 @app.route('/data', methods=['POST'])
 def handle_question():

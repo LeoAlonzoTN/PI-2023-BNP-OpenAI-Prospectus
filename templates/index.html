@@ -154,7 +154,8 @@
         }
 
         .upper {
-            max-height: 100%;
+            overflow-y: scroll;
+            max-height: 73vh;
             padding-top: 40px;
             padding-bottom: 170px;
             margin-left : max(20%, 400px);
@@ -366,7 +367,7 @@
             document.getElementById('userinput').value = "";
             document.getElementById('userinput').placeholder = "Wait . . .";
 
-            const response = await fetch("http://127.0.0.1:5000/hello", {
+            const response = await fetch("http://127.0.0.1:5000/data", {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -378,7 +379,7 @@
             document.getElementById('userinput').placeholder = "Your message...";
 
             if (json.response) {
-                let message = json.message.toString().replace(/\n/g, '<br>'); // Remplacement des sauts de ligne par des <br>
+                let message = json.message.toString().replace(/\n/g, '<br>').replace(/\\/g,''); // Remplacement des sauts de ligne par des <br>
 
                 upperdiv.innerHTML += `<div class="message">
                     <div class="appmessagediv">
