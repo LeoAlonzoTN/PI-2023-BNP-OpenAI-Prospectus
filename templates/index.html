@@ -297,65 +297,40 @@
         fileSelector.addEventListener('change', handleFile ) ;
 
         function handleFile(e) {
-            const file = event.target.files[0];
+            const file = e.target.files[0];
+            if (file) {
+                const formData = new FormData();
+                formData.append('file', file);
 
-    if (file) {
-        const reader = new FileReader();
-
-        reader.onload = function (e) {
-        const arrayBuffer = e.target.result;
-        const uint8Array = new Uint8Array(arrayBuffer);
-        const base64String = btoa(String.fromCharCode.apply(null, uint8Array));
-
-        const pdfData = {
-            document_name: file.name,
-            document_content: base64String,
-        };
-
-        // Create a FormData object and append the JSON data
-        const jsonBlob = new Blob([JSON.stringify(pdfData)], { type: 'application/json' });
-
-        // Make a Fetch API POST request
-        fetch('http://127.0.0.1:5000/download_pdf', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: jsonBlob,
-        })
-            .then(response => {
-                if(response.ok) {
-                    response.json()
-                }
-                else {
-                    throw new Error('Network response was not ok');
-                }
-            }
-            )
-            .then(data => {
-                fetch("http://127.0.0.1:5000/upload_document", {
+                fetch('http://127.0.0.1:5000/download_pdf', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ pdf_name : file.name })
+                    body: formData
                 })
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('Network response was not ok');
                     }
-                    var scrollfiles = document.getElementsByClassName('scrollfiles')[0];
-                    scrollfiles.innerHTML += `<div class="file bg-gray-200 p-2 rounded-lg text-gray-800 font-semibold">${data.document_name}</div>`;
+                    return response.json();
                 })
-                
-            })
-            .catch(error => {
-            console.error('Error:', error);
-            });
-        };
-
-    reader.readAsArrayBuffer(file);
-  }
+                .then(data => {
+                    // Envoi du nom du fichier téléchargé vers Flask pour l'upload vers OpenAI
+                    fetch("http://127.0.0.1:5000/upload_document", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ pdf_name: file.name })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        var scrollfiles = document.getElementsByClassName('scrollfiles')[0];
+                        scrollfiles.innerHTML += `<div class="file bg-gray-200 p-2 rounded-lg text-gray-800 font-semibold">${file.name}</div>`;
+                    });
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            }
         }
 
         // for scrolling messages

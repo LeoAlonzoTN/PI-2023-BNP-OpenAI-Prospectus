@@ -81,22 +81,18 @@ def delete_document():
 
 @app.route('/download_pdf', methods=['POST'])
 def download_pdf():
-    data = request.get_json()
-    document_name = data.get('document_name')
-    pdf_content = data.get('document_content')
+    if 'file' not in request.files:
+        return jsonify({"error": "Fichier non fourni", "response": False}), 400
 
-    if not document_name or not pdf_content:
-        return jsonify({"error": "Nom du document ou contenu manquant", "response": False}), 400
+    file = request.files['file']
+    document_name = file.filename
 
     try:
-        # Décodage du contenu PDF depuis base64
-        pdf_data = base64.b64decode(pdf_content)
         pdf_path = os.path.join('prospectus', document_name)
         os.makedirs(os.path.dirname(pdf_path), exist_ok=True)
 
-        with open(pdf_path, 'wb') as pdf_file:
-            pdf_file.write(pdf_data)
-        
+        file.save(pdf_path)
+
         return jsonify({"message": "PDF téléchargé avec succès", "pdf_path": pdf_path, "response": True})
     except Exception as e:
         return jsonify({"error": str(e), "response": False}), 500
