@@ -6,11 +6,11 @@ class TimeObserver(ObserverInterface):
         self.name = "Durée"
         self.debut = time.time()
         self.fin = 0
-        self.duree = 0
+        self.metric = 0
 
     def update_metric(self,input_token,output):
         self.fin = time.time()
-        self.duree = self.fin - self.duree
+        self.metric = self.fin - self.debut
 
     def get_metric(self):
-        return self.duree
+        return self.metric
