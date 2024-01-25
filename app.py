@@ -166,7 +166,7 @@ def load_bnpfile():
 def save_bnpfile():
     discussion = request.cookies.get('discussion', '')
     messages = convert_discussion_to_tuples(discussion)
-    bnp_filename = "temp.bnp"
+    bnp_filename = "tmp/temp.bnp"
     create_bnp(messages,bnp_filename)
 
     # Envoi du fichier BNP
@@ -187,8 +187,8 @@ def save_bnpfile():
 def save_docxfile():
     discussion = request.cookies.get('discussion', '')
     messages = convert_discussion_to_tuples(discussion)
-    docx_filename = "temp.docx"
-    create_bnp(messages,docx_filename)
+    docx_filename = "tmp/temp.docx"
+    create_docx(messages,docx_filename)
 
     # Envoi du fichier BNP
     response = send_file(docx_filename, as_attachment=True,download_name="discussion.docx")
