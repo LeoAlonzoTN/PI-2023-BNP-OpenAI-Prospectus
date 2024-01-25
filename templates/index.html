@@ -202,6 +202,14 @@
             padding: 3px;
             box-shadow: 1px 1px 5px #80808057;
         }
+
+        #menu {
+            display: none;
+            position: relative;
+        }
+        #menu button {
+            text-align: left;
+        }
     </style>
 </head>
 
@@ -228,8 +236,14 @@
                 </div>
             </div>
             <div class="buttons">
-                <button id="pdfSave" class="button pdf bg-gray-800 font-semibold"><span >Export conversation to PDF</span></button>
-                <button id="bnpSave" class="button export bg-gray-800 font-semibold"><span>Export conversation</span></button>
+    
+                <button onclick="toggleMenu()" class="button export bg-gray-800 font-semibold">Export conversation</button>
+
+                <div id="menu" >
+                    <button class="button bg-gray-800 font-semibold" onclick="handleMenuItem('PDF')">Export as .PDF</button>
+                    <button class="button bg-gray-800 font-semibold" onclick="handleMenuItem('DOCX')">Export as .DOCX</button>
+                    <button class="button bg-gray-800 font-semibold" onclick="handleMenuItem('BNP')">Export as .BNP</button>
+                </div>
                 <form class="button import bg-gray-800 font-semibold" action="/load_bnpfile" method="post" enctype="multipart/form-data" id="loadBnp">
                     <input type="file" name="file" id="bnpInput" accept=".bnp" style="display: none;" onchange="loadBnp()">
                     <label for="bnpInput">Import conversation</label>
@@ -499,13 +513,18 @@
             }
         }
 
-        document.getElementById('pdfSave').addEventListener('click', function() {
-            window.location.href = '/save_pdf';
-        });
+        function toggleMenu() {
+            var menu = document.getElementById('menu');
+            menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
+        }
 
-        document.getElementById('bnpSave').addEventListener('click', function() {
-            window.location.href = '/save_bnpfile';
-        });
+        function handleMenuItem(option) {
+            if (option=="PDF") window.location.href = '/save_pdf';
+            if (option=="BNP") window.location.href = '/save_bnpfile';
+            if (option=="DOCX") window.location.href = '/save_docxfile';
+            
+            menu.style.display = 'none';
+        }
 
         function loadBnp() {
             document.getElementById('loadBnp').submit();

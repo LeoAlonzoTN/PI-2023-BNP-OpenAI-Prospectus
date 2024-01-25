@@ -2,10 +2,11 @@ from flask import Flask, request, jsonify, render_template, make_response, redir
 from main import MainApplication
 from metric_management import creditManager
 from file_management import FileManager
-from topdf import create_pdf, convert_discussion_to_tuples,convert_tuples_to_discussion
+from to_pdf_file import create_pdf, convert_discussion_to_tuples,convert_tuples_to_discussion
 import os
 from time import sleep
-from bnp_file import load_bnp,create_bnp
+from to_bnp_file import load_bnp,create_bnp
+from to_docx_file import create_docx
 from time_observer import TimeObserver
 
 app = Flask(__name__)
@@ -130,7 +131,7 @@ def save2pdf():
     create_pdf(messages, pdf_filename)
 
     # Envoi du fichier PDF
-    response = send_file(pdf_filename, as_attachment=True)
+    response = send_file(pdf_filename, as_attachment=True,download_name="discussion.pdf")
 
     # Suppression du fichier après envoi
     @after_this_request
@@ -169,13 +170,34 @@ def save_bnpfile():
     create_bnp(messages,bnp_filename)
 
     # Envoi du fichier BNP
-    response = send_file(bnp_filename, as_attachment=True,download_name="log.bnp")
+    response = send_file(bnp_filename, as_attachment=True,download_name="discussion.bnp")
 
     # Suppression du fichier après envoi
     @after_this_request
     def remove_file(response):
         try:
             os.remove(bnp_filename)
+        except Exception as error:
+            app.logger.error("Erreur lors de la suppression du fichier", error)
+        return response
+
+    return response
+
+@app.route('/save_docxfile')
+def save_docxfile():
+    discussion = request.cookies.get('discussion', '')
+    messages = convert_discussion_to_tuples(discussion)
+    docx_filename = "temp.docx"
+    create_bnp(messages,docx_filename)
+
+    # Envoi du fichier BNP
+    response = send_file(docx_filename, as_attachment=True,download_name="discussion.docx")
+
+    # Suppression du fichier après envoi
+    @after_this_request
+    def remove_file(response):
+        try:
+            os.remove(docx_filename)
         except Exception as error:
             app.logger.error("Erreur lors de la suppression du fichier", error)
         return response
