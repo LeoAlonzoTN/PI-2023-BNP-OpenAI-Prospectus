@@ -5,7 +5,9 @@ def create_docx(messages, output_file):
 
     for role, content in messages:
         # Ajouter le rôle et le contenu au document
-        doc.add_paragraph(f"{role}: {content}", style='BodyText')
+        p = doc.add_paragraph()
+        p.add_run(f"{role}: ").bold = True
+        doc.add_paragraph(f"{content}", style='BodyText')
 
     # Enregistrer le fichier DOCX
     doc.save(output_file)

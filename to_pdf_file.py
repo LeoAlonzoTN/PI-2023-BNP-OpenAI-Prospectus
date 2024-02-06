@@ -60,6 +60,7 @@ def create_pdf(messages, output_file):
         story.append(role_paragraph)
 
         # Ajouter le contenu du message avec gestion du débordement
+        content = content.replace('\n','<br />')
         content_paragraph = Paragraph(content, message_style)
         story.append(content_paragraph)
 
