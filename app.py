@@ -28,7 +28,7 @@ def handle_question():
     assistant_id = main_app.assistant_manager.load_assistant_id()
 
     if not assistant_id:
-        return jsonify({"error": "Assistant ID introuvable", "response": False}), 500
+        assistant_id = main_app.assistant_manager.create_assistant(main_app.openai_client.get_client())
 
     file_paths = [f"{name}" for name in file_names]
     file_ids = main_app.file_manager.upload_documents(client, file_paths)

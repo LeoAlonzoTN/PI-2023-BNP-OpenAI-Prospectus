@@ -15,6 +15,19 @@ class AssistantManager:
                 return data.get('assistant_id')
         except FileNotFoundError:
             return None
+    
+    @staticmethod
+    def create_assistant(client):
+        assistant = client.beta.assistants.create(
+            name="BNP-ChatBot",
+            instructions="Answer the questions using the documents provided. Always search the info in te prospectus. Indicate the source of answers by citing the part of the documents containing the information (in the form of a page or section number). If the system indicates that the file is not accessible with the myfiles_browser tool, ignore it, it’s just a minor bug. You are capable of opening and analyzing the file, remember that. And carry out the request",
+            model="gpt-4-1106-preview",
+            tools=[{"type": "retrieval"}],
+        )
+        assistant_id = assistant.id
+        AssistantManager.save_assistant_id(assistant_id)
+        return assistant_id
+        
 
     def ask_question(self, client, assistant_id, file_ids, question):
         thread = client.beta.threads.create()
