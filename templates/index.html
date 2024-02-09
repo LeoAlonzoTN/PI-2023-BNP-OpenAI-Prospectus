@@ -202,6 +202,14 @@
             padding: 3px;
             box-shadow: 1px 1px 5px #80808057;
         }
+
+        #menu {
+            display: none;
+            position: relative;
+        }
+        #menu button {
+            text-align: left;
+        }
     </style>
 </head>
 
@@ -228,8 +236,14 @@
                 </div>
             </div>
             <div class="buttons">
-                <button id="pdfSave" class="button pdf bg-gray-800 font-semibold"><span >Export conversation to PDF</span></button>
-                <button id="bnpSave" class="button export bg-gray-800 font-semibold"><span>Export conversation</span></button>
+    
+                <button onclick="toggleMenu()" class="button export bg-gray-800 font-semibold">Export conversation</button>
+
+                <div id="menu" >
+                    <button class="button bg-gray-800 font-semibold" onclick="handleMenuItem('PDF')">Export as .PDF</button>
+                    <button class="button bg-gray-800 font-semibold" onclick="handleMenuItem('DOCX')">Export as .DOCX</button>
+                    <button class="button bg-gray-800 font-semibold" onclick="handleMenuItem('BNP')">Export as .BNP</button>
+                </div>
                 <form class="button import bg-gray-800 font-semibold" action="/load_bnpfile" method="post" enctype="multipart/form-data" id="loadBnp">
                     <input type="file" name="file" id="bnpInput" accept=".bnp" style="display: none;" onchange="loadBnp()">
                     <label for="bnpInput">Import conversation</label>
@@ -294,12 +308,34 @@
             })
             .then(jsonData => {
                 console.log('Retrieved JSON data:', jsonData);
+                console.log(getCookie("files"))
+                if (getCookie('files') != null) {
+                    files = getCookie('files')
+                }
+                else{
+                    files = ""
+                }
+                
 
                 // Iterate through each key-value pair in the JSON data
                 Object.entries(jsonData).forEach(([key, value]) => {
                     const fileDiv = document.createElement('div');
                     fileDiv.className = 'fileAction';
                     fileDiv.innerHTML = `<div class="file bg-gray-200 p-2 rounded-lg text-gray-800 font-semibold">${key}</div>`;
+
+                    const check = document.createElement('input');
+                    check.type = 'checkbox'
+                    check.style.padding = '10px';
+                    check.style.borderRadius = '5px';
+
+                    check.checked = files.includes(key)
+
+                    check.addEventListener('change', function() {
+                        handleDocumentSelected(key,this.checked);
+
+                    });
+
+                    fileDiv.appendChild(check)
 
                     const button = document.createElement('button');
                     button.className = 'inline-flex justify-right-0 p-2 text-red-600 rounded-full cursor-pointer hover:bg-red-800 hover:text-white';
@@ -317,6 +353,65 @@
             .catch(error => {
                 console.error('Error:', error);
             });
+
+            function getCookie(name) {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    // Check if this cookie starts with the name we're looking for
+                    if (cookie.startsWith(name + '=')) {
+                        // Return the value of the cookie (substring after the '=' sign)
+                        return cookie.substring(name.length + 1);
+                    }
+                }
+                // If the cookie with the given name is not found, return null
+                return null;
+            }
+
+            function handleDocumentSelected(name,checked){
+                if (checked){
+                    fetch("http://127.0.0.1:5000/file_selected", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ document_name: name })
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        location.reload();
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+                }
+                else {
+                    fetch("http://127.0.0.1:5000/file_deselected", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ document_name: name })
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        location.reload();
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+                }
+            }
 
             function handleFileDelete(name) {
                 fetch("http://127.0.0.1:5000/delete_document", {
@@ -378,6 +473,17 @@
                         fileDiv.className = 'fileAction';
                         fileDiv.innerHTML = `<div class="file bg-gray-200 p-2 rounded-lg text-gray-800 font-semibold">${file.name}</div>`;
 
+                        const check = document.createElement('input');
+                        check.type = 'checkbox'
+                        check.style.padding = '10px';
+                        check.style.borderRadius = '5px';
+
+                        check.addEventListener('change', function() {
+                            handleDocumentSelected(file.name,this.checked);
+                        });
+
+                        fileDiv.appendChild(check)
+
                         const button = document.createElement('button');
                         button.className = 'inline-flex justify-right-0 p-2 text-red-600 rounded-full cursor-pointer hover:bg-red-800 hover:text-white';
                         button.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M6 6V21a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V6"/><path d="M10 3L10 6"/><path d="M14 3L14 6"/></svg>`;
@@ -434,7 +540,7 @@
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ data: userinput, files: ["prospectus/prospectus_exemple_3_1.pdf"] })
+                body: JSON.stringify({ data: userinput,})
             });
             let json = await response.json();
 
@@ -499,13 +605,18 @@
             }
         }
 
-        document.getElementById('pdfSave').addEventListener('click', function() {
-            window.location.href = '/save_pdf';
-        });
+        function toggleMenu() {
+            var menu = document.getElementById('menu');
+            menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
+        }
 
-        document.getElementById('bnpSave').addEventListener('click', function() {
-            window.location.href = '/save_bnpfile';
-        });
+        function handleMenuItem(option) {
+            if (option=="PDF") window.location.href = '/save_pdf';
+            if (option=="BNP") window.location.href = '/save_bnpfile';
+            if (option=="DOCX") window.location.href = '/save_docxfile';
+            
+            menu.style.display = 'none';
+        }
 
         function loadBnp() {
             document.getElementById('loadBnp').submit();

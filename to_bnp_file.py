@@ -31,6 +31,18 @@ if __name__ == '__main__':
         (Username, "I'm fine, thank you!"),
         (Botname, "What are your plans for the weekend? "), 
         (Username, "I'm planning to relax and read a book."),
+        (Botname, "Hello, how are you?"),
+        (Username, "I'm fine, thank you!"),
+        (Botname, "What are your plans for the weekend? "), 
+        (Username, "I'm planning to relax and read a book."),
+        (Botname, "Hello, how are you?"),
+        (Username, "I'm fine, thank you!"),
+        (Botname, "What are your plans for the weekend? "), 
+        (Username, "I'm planning to relax and read a book."),
+        (Botname, "Hello, how are you?"),
+        (Username, "I'm fine, thank you!"),
+        (Botname, "What are your plans for the weekend? "), 
+        (Username, "I'm planning to relax and read a book."),
     ]
 
     output_file = "output.bnp"

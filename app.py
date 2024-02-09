@@ -2,10 +2,11 @@ from flask import Flask, request, jsonify, render_template, make_response, redir
 from main import MainApplication
 from metric_management import creditManager
 from file_management import FileManager
-from topdf import create_pdf, convert_discussion_to_tuples,convert_tuples_to_discussion
+from to_pdf_file import create_pdf, convert_discussion_to_tuples,convert_tuples_to_discussion
 import os
 from time import sleep
-from bnp_file import load_bnp,create_bnp
+from to_bnp_file import load_bnp,create_bnp
+from to_docx_file import create_docx
 from time_observer import TimeObserver
 
 app = Flask(__name__)
@@ -18,7 +19,8 @@ def handle_question():
     main_app.initialize_observers()
     data = request.get_json()
     text = data.get('data')
-    file_names = data.get("files")
+    file_names = request.cookies.get('files').split(';')
+
 
     if not text or not file_names:
         return jsonify({"error": "Question ou noms de fichiers manquants", "response": False}), 400
@@ -30,7 +32,7 @@ def handle_question():
     if not assistant_id:
         assistant_id = main_app.assistant_manager.create_assistant(main_app.openai_client.get_client())
 
-    file_paths = [f"{name}" for name in file_names]
+    file_paths = [f"{name}" for name in file_names if name != '']
     file_ids = main_app.file_manager.upload_documents(client, file_paths)
     response,input_token,response_without_annotation = main_app.assistant_manager.ask_question(client, assistant_id, file_ids, text)
     main_app.update_metric(input_token,response_without_annotation)
@@ -57,6 +59,7 @@ def index():
 def reset_discussion():
     response = make_response(redirect('/'))
     response.set_cookie('discussion', '', expires=0)
+    response.set_cookie('files', '', expires=0)
     return response
 
 @app.route('/delete_document', methods=['POST'])
@@ -77,8 +80,13 @@ def delete_document():
 
     if delete_response.get('error'):
         return jsonify({"error": delete_response['error'], "response": False}), 500
+    
+    files = request.cookies.get('files', '')
+    files = files.replace(document_name,'').replace(';','')
+    resp = make_response(jsonify({"message": "Document supprimé avec succès", "response": True}), 200)
+    resp.set_cookie('files',files)
 
-    return jsonify({"message": "Document supprimé avec succès", "response": True}), 200
+    return resp
 
 
 @app.route('/download_pdf', methods=['POST'])
@@ -130,7 +138,7 @@ def save2pdf():
     create_pdf(messages, pdf_filename)
 
     # Envoi du fichier PDF
-    response = send_file(pdf_filename, as_attachment=True)
+    response = send_file(pdf_filename, as_attachment=True,download_name="discussion.pdf")
 
     # Suppression du fichier après envoi
     @after_this_request
@@ -165,11 +173,11 @@ def load_bnpfile():
 def save_bnpfile():
     discussion = request.cookies.get('discussion', '')
     messages = convert_discussion_to_tuples(discussion)
-    bnp_filename = "temp.bnp"
+    bnp_filename = "tmp/temp.bnp"
     create_bnp(messages,bnp_filename)
 
     # Envoi du fichier BNP
-    response = send_file(bnp_filename, as_attachment=True,download_name="log.bnp")
+    response = send_file(bnp_filename, as_attachment=True,download_name="discussion.bnp")
 
     # Suppression du fichier après envoi
     @after_this_request
@@ -181,6 +189,57 @@ def save_bnpfile():
         return response
 
     return response
+
+@app.route('/save_docxfile')
+def save_docxfile():
+    discussion = request.cookies.get('discussion', '')
+    messages = convert_discussion_to_tuples(discussion)
+    docx_filename = "tmp/temp.docx"
+    create_docx(messages,docx_filename)
+
+    # Envoi du fichier BNP
+    response = send_file(docx_filename, as_attachment=True,download_name="discussion.docx")
+
+    # Suppression du fichier après envoi
+    @after_this_request
+    def remove_file(response):
+        try:
+            os.remove(docx_filename)
+        except Exception as error:
+            app.logger.error("Erreur lors de la suppression du fichier", error)
+        return response
+
+    return response
+
+@app.route('/file_selected',methods=['POST'])
+def file_selected():
+    data = request.get_json()
+    document_name = data.get('document_name')
+
+    files = request.cookies.get('files', '')
+    if document_name not in files:
+        files = files + ";" + document_name
+
+    resp = make_response(jsonify({"response": True, "message": 'file succesfuly added'}))
+    resp.set_cookie('files',files)
+
+    print(files)
+
+    return resp
+
+@app.route('/file_deselected',methods=['POST'])
+def file_deselected():
+    data = request.get_json()
+    document_name = data.get('document_name')
+
+    files = request.cookies.get('files', '')
+    files = files.replace(document_name,'').replace(';','')
+
+    resp = make_response(jsonify({"response": True, "message": 'file succesfuly added'}))
+    resp.set_cookie('files',files)
+    print(files)
+
+    return resp
 
 if __name__ == '__main__':
     app.run(debug=True)
