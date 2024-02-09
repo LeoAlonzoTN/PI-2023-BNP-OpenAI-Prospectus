@@ -19,7 +19,8 @@ def handle_question():
     main_app.initialize_observers()
     data = request.get_json()
     text = data.get('data')
-    file_names = data.get("files")
+    file_names = request.cookies.get('files').split(';')
+
 
     if not text or not file_names:
         return jsonify({"error": "Question ou noms de fichiers manquants", "response": False}), 400
@@ -31,7 +32,7 @@ def handle_question():
     if not assistant_id:
         return jsonify({"error": "Assistant ID introuvable", "response": False}), 500
 
-    file_paths = [f"{name}" for name in file_names]
+    file_paths = [f"{name}" for name in file_names if name != '']
     file_ids = main_app.file_manager.upload_documents(client, file_paths)
     response,input_token,response_without_annotation = main_app.assistant_manager.ask_question(client, assistant_id, file_ids, text)
     main_app.update_metric(input_token,response_without_annotation)
@@ -58,6 +59,7 @@ def index():
 def reset_discussion():
     response = make_response(redirect('/'))
     response.set_cookie('discussion', '', expires=0)
+    response.set_cookie('files', '', expires=0)
     return response
 
 @app.route('/delete_document', methods=['POST'])
@@ -78,8 +80,13 @@ def delete_document():
 
     if delete_response.get('error'):
         return jsonify({"error": delete_response['error'], "response": False}), 500
+    
+    files = request.cookies.get('files', '')
+    files = files.replace(document_name,'').replace(';','')
+    resp = make_response(jsonify({"message": "Document supprimé avec succès", "response": True}), 200)
+    resp.set_cookie('files',files)
 
-    return jsonify({"message": "Document supprimé avec succès", "response": True}), 200
+    return resp
 
 
 @app.route('/download_pdf', methods=['POST'])
@@ -203,6 +210,36 @@ def save_docxfile():
         return response
 
     return response
+
+@app.route('/file_selected',methods=['POST'])
+def file_selected():
+    data = request.get_json()
+    document_name = data.get('document_name')
+
+    files = request.cookies.get('files', '')
+    if document_name not in files:
+        files = files + ";" + document_name
+
+    resp = make_response(jsonify({"response": True, "message": 'file succesfuly added'}))
+    resp.set_cookie('files',files)
+
+    print(files)
+
+    return resp
+
+@app.route('/file_deselected',methods=['POST'])
+def file_deselected():
+    data = request.get_json()
+    document_name = data.get('document_name')
+
+    files = request.cookies.get('files', '')
+    files = files.replace(document_name,'').replace(';','')
+
+    resp = make_response(jsonify({"response": True, "message": 'file succesfuly added'}))
+    resp.set_cookie('files',files)
+    print(files)
+
+    return resp
 
 if __name__ == '__main__':
     app.run(debug=True)
