@@ -4,6 +4,8 @@ This project was created by ALONZO Léo, KIEFFER Thomas and TAVERNE Léo for BNP
 
 ## Installation
 
+To use the project you need to download it from the release section https://github.com/LeoAlonzoTN/PI-2023-BNP-OpenAI-Prospectus/releases. Once downloaded, extract it in a file path/to/project.
+
 First, we need to create a pyvenv :
 ```
 cd path/to/project
